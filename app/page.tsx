@@ -109,6 +109,9 @@ const Home = async () => {
             <h1 className='text-3xl font-semibold mb-6 text-center'>
               Share, Discuss, Cite <span className='text-pink-500'>ChatGPT</span> Conversations
             </h1>
+            <h1 className='text-3xl font-semibold mb-6 text-center'>
+              Example of change made <span className='text-green-500'>WOW!</span>
+            </h1>
             <p className='text-center mb-8'>
               Your reliable tool for citing Generative A.I. conversations. Easily save discussions with Gemini, ChatGPT,
               Meta and Claude into a URL.
