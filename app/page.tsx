@@ -92,7 +92,7 @@ const Home = async () => {
             <svg className='w-6 h-6 mr-2' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
               <path d='M12 5L5 19H19L12 5Z' fill='currentColor' />
             </svg>
-            <span>OmniConvo</span>
+            <span>GM - OmniConvo</span>
           </div>
         </div>
         <div className='flex items-center space-x-4'>
