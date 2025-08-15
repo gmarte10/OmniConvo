@@ -6,6 +6,7 @@ import type { Conversation } from '@/types/conversation';
  * @returns Promise resolving to a structured Conversation object
  */
 export async function parseCopilot(html: string): Promise<Conversation> {
+  console.log("Hello World");
   return {
     model: 'Copilot',
     content: html,
