@@ -1,5 +1,5 @@
 import type { Conversation } from "@/types/conversation";
-import { parse, HTMLElement } from "node-html-parser";
+import { parse } from "node-html-parser";
 
 /**
  * Extracts a Copilot share page into a structured Conversation.
