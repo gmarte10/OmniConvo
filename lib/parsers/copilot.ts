@@ -1,5 +1,5 @@
 import type { Conversation } from "@/types/conversation";
-import { parse } from "node-html-parser";
+import { parse, HTMLElement } from "node-html-parser";
 
 interface ConversationTurn {
   prompt: string;
@@ -28,13 +28,25 @@ export async function parseCopilot(html: string): Promise<Conversation> {
       el.classList.contains("group/ai-message-item") &&
       currentPrompt
     ) {
-      const output = el.querySelector("p")?.innerText.trim() ?? "";
+      // Clone the element to safely modify it
+      const messageClone = el.clone() as HTMLElement;
+
+      // Find and remove the UI buttons container
+      const reactions = messageClone.querySelector(
+        '[data-testid="message-item-reactions"]'
+      );
+      if (reactions) {
+        reactions.remove();
+      }
+
+      // Get the full inner HTML of the message content
+      const output = messageClone.innerHTML.trim();
       turns.push({ prompt: currentPrompt, output });
       currentPrompt = null; // Reset prompt after pairing
     }
   });
 
-  // Handle any remaining prompt without an output
+  // Handle a prompt that might not have a corresponding output
   if (currentPrompt) {
     turns.push({ prompt: currentPrompt, output: "" });
   }
@@ -49,6 +61,7 @@ export async function parseCopilot(html: string): Promise<Conversation> {
     beautifulHtml += `<p style="background-color: #f0f0f0; padding: 10px; border-radius: 5px;">${turn.prompt}</p>`;
     if (turn.output) {
       beautifulHtml += `<h2 style="font-size: 18px; font-weight: bold; margin-top: 20px; margin-bottom: 10px;">Output:</h2>`;
+      // Embed the full HTML content of the output
       beautifulHtml += `<div style="background-color: #e0e0e0; padding: 10px; border-radius: 5px;">${turn.output}</div>`;
     }
     beautifulHtml += `</div>`;
