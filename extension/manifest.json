@@ -13,8 +13,7 @@
     "https://claude.ai/*",
     "https://gemini.google.com/*",
     "https://chatgpt.com/*",
-    "https://chat.openai.com/*",
-    "https://copilot.microsoft.com/*"
+    "https://chat.openai.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
@@ -27,8 +26,7 @@
         "https://bard.google.com/*",
         "https://gemini.google.com/*",
         "https://claude.ai/*",
-        "https://www.meta.ai/*",
-        "https://copilot.microsoft.com/*"
+        "https://www.meta.ai/*"
       ],
       "js": ["config.js", "index.js"],
       "run_at": "document_end",
