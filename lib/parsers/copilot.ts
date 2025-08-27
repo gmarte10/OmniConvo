@@ -1,4 +1,5 @@
-import type { Conversation } from "@/types/conversation";
+import type { Conversation } from '@/types/conversation';
+import * as cheerio from 'cheerio';
 
 /**
  * A type to represent a single prompt-output pair.
@@ -14,46 +15,28 @@ type ConversationPair = {
  * @returns Promise resolving to a structured Conversation object
  */
 export async function parseCopilot(html: string): Promise<Conversation> {
-  // Use the DOMParser API to parse the HTML string into a DOM document.
-  const parser = new DOMParser();
-  const doc: Document = parser.parseFromString(html, "text/html");
+  // Load the HTML into cheerio for server-side parsing.
+  const $ = cheerio.load(html);
 
   const conversationPairs: ConversationPair[] = [];
-  const messageItems: NodeListOf<Element> = doc.querySelectorAll(
-    '[data-content="user-message"], .group\\/ai-message-item'
-  );
+  const messageItems = $('[data-content="user-message"], .group\\/ai-message-item');
 
-  for (let i = 0; i < messageItems.length; i++) {
-    const item: Element = messageItems[i];
+  messageItems.each((i, el) => {
+    const element = $(el);
 
-    // Check if the current item is a user message (prompt).
-    if (item.getAttribute("data-content") === "user-message") {
-      const promptElement = item.querySelector(
-        ".font-ligatures-none"
-      ) as HTMLElement | null;
-      const promptText: string = promptElement
-        ? promptElement.textContent?.trim() ?? ""
-        : "";
-
-      const outputItem: Element | null = messageItems[i + 1];
+    // Check if the current element is a user message (prompt).
+    if (element.attr('data-content') === 'user-message') {
+      const promptText = element.find('.font-ligatures-none').text().trim();
+      
+      const nextElement = messageItems.eq(i + 1);
 
       // Check if the next element is an AI message (output).
-      if (
-        outputItem &&
-        outputItem.classList.contains("group/ai-message-item")
-      ) {
-        const outputElement = outputItem.querySelector(
-          "p > span"
-        ) as HTMLSpanElement | null;
-        const outputText: string = outputElement
-          ? outputElement.textContent?.trim() ?? ""
-          : "";
-
+      if (nextElement.hasClass('group/ai-message-item')) {
+        const outputText = nextElement.find('p > span').text().trim();
         conversationPairs.push({ prompt: promptText, output: outputText });
-        i++; // Increment to skip the output item in the next iteration.
       }
     }
-  }
+  });
 
   // Format the extracted pairs into a single HTML string.
   const formattedHtml: string = conversationPairs
@@ -67,7 +50,7 @@ export async function parseCopilot(html: string): Promise<Conversation> {
     </div>
   `
     )
-    .join("");
+    .join('');
 
   const prettyHtml = `
     <div style="font-family: sans-serif; padding: 20px;">
@@ -77,7 +60,7 @@ export async function parseCopilot(html: string): Promise<Conversation> {
   `;
 
   return {
-    model: "Copilot",
+    model: 'Copilot',
     content: prettyHtml,
     scrapedAt: new Date().toISOString(),
     sourceHtmlBytes: html.length,
