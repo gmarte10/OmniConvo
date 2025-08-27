@@ -53,5 +53,13 @@ chrome.tabs.query({ active: true, currentWindow: true, url: 'https://claude.ai/*
     });
   }
 });
+chrome.tabs.query({ active: true, currentWindow: true, url: 'https://copilot.microsoft.com/*' }, (tabs) => {
+  if (tabs?.length) {
+    chrome.tabs.sendMessage(tabs[0].id, { action: 'model', model: 'Copilot' }, function (_) {
+      console.log('is Copilot');
+    });
+  }
+});
+
 
 window.onload = initApp;
