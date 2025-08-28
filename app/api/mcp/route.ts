@@ -18,22 +18,91 @@ async function ensureInitialized() {
   }
 }
 
-async function saveConversation(conversationContent: string): Promise<string> {
+// Helper function to parse simple conversation text into structured format
+function parseConversationText(text: string) {
+  const messages = [];
+  const lines = text.split("\n").filter((line) => line.trim());
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Look for patterns like "Human:", "Assistant:", "User:", etc.
+    if (line.match(/^(Human|User):\s*/i)) {
+      const content = line.replace(/^(Human|User):\s*/i, "");
+      // Collect multi-line content
+      let fullContent = content;
+      let j = i + 1;
+      while (
+        j < lines.length &&
+        !lines[j].match(/^(Human|User|Assistant):\s*/i)
+      ) {
+        fullContent += "\n" + lines[j].trim();
+        j++;
+      }
+      messages.push({
+        role: "human" as const,
+        content: fullContent,
+        timestamp: new Date().toISOString(),
+      });
+      i = j - 1; // Skip the lines we've processed
+    } else if (line.match(/^Assistant:\s*/i)) {
+      const content = line.replace(/^Assistant:\s*/i, "");
+      // Collect multi-line content
+      let fullContent = content;
+      let j = i + 1;
+      while (
+        j < lines.length &&
+        !lines[j].match(/^(Human|User|Assistant):\s*/i)
+      ) {
+        fullContent += "\n" + lines[j].trim();
+        j++;
+      }
+      messages.push({
+        role: "assistant" as const,
+        content: fullContent,
+        timestamp: new Date().toISOString(),
+      });
+      i = j - 1; // Skip the lines we've processed
+    }
+  }
+
+  // If no structured format found, treat entire text as a single message
+  if (messages.length === 0) {
+    messages.push({
+      role: "human" as const,
+      content: text,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return messages;
+}
+
+async function saveConversation(
+  conversationContent: string,
+  title?: string
+): Promise<string> {
   await ensureInitialized();
 
   const conversationId = randomUUID();
 
+  // Add title if provided
+  let finalContent = conversationContent;
+  if (title) {
+    finalContent = `Title: ${title}\n\n${conversationContent}`;
+  }
+
   // Store the conversation content in S3
   const contentKey = await s3Client.storeConversation(
     conversationId,
-    conversationContent
+    finalContent
   );
 
   // Create the database record
   const dbInput: CreateConversationInput = {
     model: "Claude",
     scrapedAt: new Date(),
-    sourceHtmlBytes: conversationContent.length,
+    sourceHtmlBytes: finalContent.length,
     views: 0,
     contentKey,
   };
@@ -136,19 +205,23 @@ export async function POST(req: NextRequest) {
           const { conversation_text, conversation_history, title } =
             params.arguments || {};
 
-          if (typeof conversation_text !== "string") {
+          if (typeof conversation_text !== "string" && !conversation_history) {
             return NextResponse.json({
               jsonrpc: "2.0",
               id,
-              error: { code: -32602, message: "conversation_text required" },
+              error: {
+                code: -32602,
+                message: "conversation_text or conversation_history required",
+              },
             });
           }
 
           try {
-            // If conversation_history is provided, format it nicely
-            let formattedContent = conversation_text;
+            let formattedContent = "";
 
+            // Priority: conversation_history > parsed conversation_text > raw conversation_text
             if (conversation_history && Array.isArray(conversation_history)) {
+              // Use provided structured conversation history
               formattedContent = conversation_history
                 .map((msg) => {
                   const roleLabel =
@@ -156,17 +229,32 @@ export async function POST(req: NextRequest) {
                   const timestamp = msg.timestamp
                     ? ` [${new Date(msg.timestamp).toLocaleString()}]`
                     : "";
-                  return `${roleLabel}${timestamp}: ${msg.content}`;
+                  return `${roleLabel}${timestamp}:\n${msg.content}`;
                 })
-                .join("\n\n");
+                .join("\n\n" + "=".repeat(50) + "\n\n");
+            } else if (conversation_text) {
+              // Try to parse conversation_text into structured format
+              const parsedMessages = parseConversationText(conversation_text);
+
+              if (parsedMessages.length > 1) {
+                // Successfully parsed into multiple messages
+                formattedContent = parsedMessages
+                  .map((msg) => {
+                    const roleLabel =
+                      msg.role === "human" ? "Human" : "Assistant";
+                    const timestamp = msg.timestamp
+                      ? ` [${new Date(msg.timestamp).toLocaleString()}]`
+                      : "";
+                    return `${roleLabel}${timestamp}:\n${msg.content}`;
+                  })
+                  .join("\n\n" + "=".repeat(50) + "\n\n");
+              } else {
+                // Use raw conversation_text as fallback
+                formattedContent = conversation_text;
+              }
             }
 
-            // Add title if provided
-            if (title) {
-              formattedContent = `Title: ${title}\n\n${formattedContent}`;
-            }
-
-            const url = await saveConversation(formattedContent);
+            const url = await saveConversation(formattedContent, title);
             return NextResponse.json({
               jsonrpc: "2.0",
               id,
