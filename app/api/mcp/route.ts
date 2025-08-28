@@ -90,6 +90,31 @@ export async function POST(req: NextRequest) {
                       type: "string",
                       description: "Full text of the conversation",
                     },
+                    conversation_history: {
+                      type: "array",
+                      description:
+                        "Array of conversation messages with roles and content",
+                      items: {
+                        type: "object",
+                        properties: {
+                          role: {
+                            type: "string",
+                            enum: ["human", "assistant"],
+                          },
+                          content: {
+                            type: "string",
+                          },
+                          timestamp: {
+                            type: "string",
+                          },
+                        },
+                        required: ["role", "content"],
+                      },
+                    },
+                    title: {
+                      type: "string",
+                      description: "Optional title for the conversation",
+                    },
                   },
                   required: ["conversation_text"],
                 },
@@ -108,7 +133,9 @@ export async function POST(req: NextRequest) {
         }
 
         if (params.name === "save_conversation") {
-          const { conversation_text } = params.arguments || {};
+          const { conversation_text, conversation_history, title } =
+            params.arguments || {};
+
           if (typeof conversation_text !== "string") {
             return NextResponse.json({
               jsonrpc: "2.0",
@@ -118,7 +145,28 @@ export async function POST(req: NextRequest) {
           }
 
           try {
-            const url = await saveConversation(conversation_text);
+            // If conversation_history is provided, format it nicely
+            let formattedContent = conversation_text;
+
+            if (conversation_history && Array.isArray(conversation_history)) {
+              formattedContent = conversation_history
+                .map((msg) => {
+                  const roleLabel =
+                    msg.role === "human" ? "Human" : "Assistant";
+                  const timestamp = msg.timestamp
+                    ? ` [${new Date(msg.timestamp).toLocaleString()}]`
+                    : "";
+                  return `${roleLabel}${timestamp}: ${msg.content}`;
+                })
+                .join("\n\n");
+            }
+
+            // Add title if provided
+            if (title) {
+              formattedContent = `Title: ${title}\n\n${formattedContent}`;
+            }
+
+            const url = await saveConversation(formattedContent);
             return NextResponse.json({
               jsonrpc: "2.0",
               id,
@@ -131,7 +179,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({
               jsonrpc: "2.0",
               id,
-              error: { code: -32603, message: "error" },
+              error: { code: -32603, message: "Internal server error" },
             });
           }
         }
@@ -154,7 +202,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       jsonrpc: "2.0",
       id: id || null,
-      error: { code: -32603, message: "error" },
+      error: { code: -32603, message: "Internal server error" },
     });
   }
 }
