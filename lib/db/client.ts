@@ -1,5 +1,5 @@
-import { Pool } from 'pg';
-import { DatabaseConfig } from './types';
+import { Pool } from "pg";
+import { DatabaseConfig } from "./types";
 
 /**
  * Database client singleton for managing database connections
@@ -26,7 +26,7 @@ class DatabaseClient {
    */
   public async initialize(config: DatabaseConfig): Promise<void> {
     if (this.pool) {
-      throw new Error('Database client already initialized');
+      return;
     }
 
     this.pool = new Pool({
@@ -43,7 +43,11 @@ class DatabaseClient {
       client.release();
     } catch (error) {
       this.pool = null;
-      throw new Error(`Failed to connect to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to connect to database: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -53,7 +57,7 @@ class DatabaseClient {
    */
   public getPool(): Pool {
     if (!this.pool) {
-      throw new Error('Database client not initialized');
+      throw new Error("Database client not initialized");
     }
     return this.pool;
   }
