@@ -91,3 +91,30 @@
     transform: rotate(360deg);
   }
 }
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: #101010;
+  }
+
+  .title {
+    color: #ffffff;
+  }
+
+  .button {
+    background-color: #c00101;
+  }
+
+  .button:hover {
+    background-color: #fe0303;
+  }
+
+  .button:active {
+    background-color: #600101;
+  }
+
+  .loader {
+    border-top-color: #c00101;
+  }
+}
