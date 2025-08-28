@@ -104,15 +104,16 @@ const ConversationDetailPage = async ({
           </div>
           <div className="flex items-center">
             <div className="text-primary font-bold flex items-center">
-              <svg
-                className="w-6 h-6 mr-2"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M12 5L5 19H19L12 5Z" fill="currentColor" />
-              </svg>
-              <span>OmniConvo</span>
+              <Image
+                src="/logo.png"
+                alt="OmniConvo Logo"
+                width={32}
+                height={32}
+                className="h-8 w-8"
+              />
+              <span className="text-[#C00101] font-bold text-xl">
+                OmniConvo GM
+              </span>
             </div>
           </div>
         </header>
