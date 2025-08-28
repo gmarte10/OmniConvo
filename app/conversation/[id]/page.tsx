@@ -102,20 +102,6 @@ const ConversationDetailPage = async ({
               </Button>
             </Link>
           </div>
-          <div className="flex items-center">
-            <div className="text-primary font-bold flex items-center">
-              <Image
-                src="/logo.png"
-                alt="OmniConvo Logo"
-                width={32}
-                height={32}
-                className="h-8 w-8"
-              />
-              <span className="text-[#C00101] font-bold text-xl">
-                OmniConvo GM
-              </span>
-            </div>
-          </div>
         </header>
 
         <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">

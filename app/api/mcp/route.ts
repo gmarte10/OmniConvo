@@ -166,13 +166,15 @@ export async function POST(req: NextRequest) {
               formattedContent = conversation_history
                 .map((msg) => {
                   const roleLabel =
-                    msg.role === "human" ? "Human" : "Assistant";
+                    msg.role === "human" ? "### Human" : "### Assistant";
                   const timestamp = msg.timestamp
-                    ? ` [${new Date(msg.timestamp).toLocaleString()}]`
+                    ? `*Timestamp: ${new Date(
+                        msg.timestamp
+                      ).toLocaleString()}*\n\n`
                     : "";
-                  return `${roleLabel}${timestamp}:\n${msg.content}`;
+                  return `${roleLabel}\n${timestamp}${msg.content}`;
                 })
-                .join("\n\n" + "=".repeat(50) + "\n\n");
+                .join("\n\n---\n\n");
             }
 
             const url = await saveConversation(formattedContent, title);
