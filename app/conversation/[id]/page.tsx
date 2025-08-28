@@ -123,8 +123,14 @@ const ConversationDetailPage = async ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Badge
-                    variant={
-                      conversation.model === "ChatGPT" ? "default" : "secondary"
+                    className={
+                      conversation.model === "ChatGPT"
+                        ? "bg-blue-800 hover:bg-blue-700"
+                        : conversation.model === "Claude"
+                        ? "bg-orange-500 hover:bg-orange-600"
+                        : conversation.model === "Copilot"
+                        ? "bg-pink-500 hover:bg-pink-600"
+                        : "bg-gray-700 hover:bg-gray-600"
                     }
                   >
                     {conversation.model}

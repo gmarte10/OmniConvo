@@ -102,7 +102,7 @@ const Home = async () => {
             height={32}
             className="h-8 w-8"
           />
-          <span className="text-primary font-bold text-xl">OmniConvo GM</span>
+          <span className="text-[#C00101] font-bold text-xl">OmniConvo GM</span>
         </Link>
         <div className="flex items-center space-x-4">
           <Button
@@ -120,7 +120,9 @@ const Home = async () => {
         <Card className="p-6 mb-8">
           <CardContent className="pt-6">
             <h1 className="text-3xl font-semibold mb-6 text-center">
-              Save <span className="text-pink-500">Copilot</span> Conversations
+              Save <span className="text-pink-500">Copilot</span>,{" "}
+              <span className="text-orange-500">Claude</span>, and{" "}
+              <span className="text-blue-500">ChatGPT</span> Conversations
             </h1>
             <p className="text-center mb-8 text-muted-foreground">
               Your reliable tool for saving Generative A.I. conversations.
@@ -145,7 +147,15 @@ const Home = async () => {
                   <CardContent className="pt-6 px-6">
                     <div className="flex items-start space-x-4">
                       <Avatar
-                        className={`h-10 w-10 bg-primary text-primary-foreground`}
+                        className={`h-10 w-10 ${
+                          card.platform === "ChatGPT"
+                            ? "bg-blue-600"
+                            : card.platform === "Claude"
+                            ? "bg-orange-600"
+                            : card.platform === "Copilot"
+                            ? "bg-pink-500"
+                            : "bg-gray-600"
+                        }`}
                       >
                         <AvatarFallback>{card.avatar}</AvatarFallback>
                       </Avatar>
@@ -159,8 +169,14 @@ const Home = async () => {
                   <CardFooter className="px-6 py-4 bg-muted/50 border-t flex justify-between items-center text-xs text-muted-foreground">
                     <div>
                       <Badge
-                        variant={
-                          card.platform === "ChatGPT" ? "default" : "secondary"
+                        className={
+                          card.platform === "ChatGPT"
+                            ? "bg-blue-800 hover:bg-blue-700"
+                            : card.platform === "Claude"
+                            ? "bg-orange-500 hover:bg-orange-600"
+                            : card.platform === "Copilot"
+                            ? "bg-pink-500 hover:bg-pink-600"
+                            : "bg-gray-700 hover:bg-gray-600"
                         }
                       >
                         {card.platform}
