@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+
 import { createConversationRecord } from "@/lib/db/conversations";
 import { s3Client } from "@/lib/storage/s3";
 import { dbClient } from "@/lib/db/client";
 import { loadConfig } from "@/lib/config";
 import { CreateConversationInput } from "@/lib/db/types";
-import { randomUUID } from "crypto";
 
 let isInitialized = false;
 
@@ -30,7 +31,7 @@ async function saveConversation(conversationContent: string): Promise<string> {
 
   // Create the database record
   const dbInput: CreateConversationInput = {
-    model: "Claude", // Or dynamically determine this
+    model: "Claude",
     scrapedAt: new Date(),
     sourceHtmlBytes: conversationContent.length,
     views: 0,
@@ -39,76 +40,126 @@ async function saveConversation(conversationContent: string): Promise<string> {
 
   const record = await createConversationRecord(dbInput);
 
-  // Return the permalink
   return `${process.env.NEXT_PUBLIC_BASE_URL}/conversation/${record.id}`;
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const { method, params, id, jsonrpc } = body;
 
-  if (
-    body.method === "tool/execute" &&
-    body.params.tool_name === "save_conversation"
-  ) {
-    try {
-      const conversationContent = body.params.inputs.conversation_text;
-      const url = await saveConversation(conversationContent);
-      const result = {
-        json: {
-          success: true,
-          url: url,
-        },
-      };
+  try {
+    // Notifications (no response)
+    if (id === undefined && method) {
+      console.log(`Notification: ${method}`);
+      return new NextResponse(null, { status: 204 });
+    }
+
+    if (!jsonrpc || !method || id === undefined) {
       return NextResponse.json({
         jsonrpc: "2.0",
-        id: body.id,
-        result: result,
-      });
-    } catch (error) {
-      console.log(error);
-      return NextResponse.json({
-        jsonrpc: "2.0",
-        id: body.id,
-        error: {
-          code: -32603,
-          message: "Internal server error",
-        },
+        id: id || null,
+        error: { code: -32600, message: "Invalid Request" },
       });
     }
-  }
 
-  // Handle other MCP methods like tool/discover
-  if (body.method === "tool/discover") {
-    return NextResponse.json({
-      jsonrpc: "2.0",
-      id: body.id,
-      result: {
-        tools: [
-          {
-            tool_name: "save_conversation",
-            description: "Saves the current conversation to OmniConvo.",
-            input_schema: {
-              type: "object",
-              properties: {
-                conversation_text: {
-                  type: "string",
-                  description: "The full text of the conversation to save.",
+    switch (method) {
+      case "initialize":
+        return NextResponse.json({
+          jsonrpc: "2.0",
+          id,
+          result: {
+            protocolVersion: "2025-06-18",
+            capabilities: { tools: {} },
+            serverInfo: { name: "OmniConvo MCP", version: "0.1.0" },
+          },
+        });
+
+      case "tools/list":
+        return NextResponse.json({
+          jsonrpc: "2.0",
+          id,
+          result: {
+            tools: [
+              {
+                name: "save_conversation",
+                description: "Save a conversation into OmniConvo (S3 + DB).",
+                inputSchema: {
+                  type: "object",
+                  properties: {
+                    conversation_text: {
+                      type: "string",
+                      description: "Full text of the conversation",
+                    },
+                  },
+                  required: ["conversation_text"],
                 },
               },
-              required: ["conversation_text"],
-            },
+            ],
           },
-        ],
-      },
+        });
+
+      case "tools/call":
+        if (!params || !params.name) {
+          return NextResponse.json({
+            jsonrpc: "2.0",
+            id,
+            error: { code: -32602, message: "Missing tool name" },
+          });
+        }
+
+        if (params.name === "save_conversation") {
+          const { conversation_text } = params.arguments || {};
+          if (typeof conversation_text !== "string") {
+            return NextResponse.json({
+              jsonrpc: "2.0",
+              id,
+              error: { code: -32602, message: "conversation_text required" },
+            });
+          }
+
+          try {
+            const url = await saveConversation(conversation_text);
+            return NextResponse.json({
+              jsonrpc: "2.0",
+              id,
+              result: {
+                content: [{ type: "text", text: `Conversation saved: ${url}` }],
+              },
+            });
+          } catch (err: any) {
+            console.error("Error saving conversation:", err);
+            return NextResponse.json({
+              jsonrpc: "2.0",
+              id,
+              error: { code: -32603, message: err.message },
+            });
+          }
+        }
+
+        return NextResponse.json({
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32601, message: `Unknown tool: ${params.name}` },
+        });
+
+      default:
+        return NextResponse.json({
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32601, message: `Unknown method: ${method}` },
+        });
+    }
+  } catch (error: any) {
+    console.error("MCP route error:", error);
+    return NextResponse.json({
+      jsonrpc: "2.0",
+      id: id || null,
+      error: { code: -32603, message: error.message },
     });
   }
+}
 
-  return NextResponse.json({
-    jsonrpc: "2.0",
-    id: body.id,
-    error: {
-      code: -32601,
-      message: "Method not found",
-    },
-  });
+export async function GET() {
+  // Health check
+  return NextResponse.json({ status: "healthy", server: "OmniConvo MCP" });
 }
