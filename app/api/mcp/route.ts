@@ -19,64 +19,6 @@ async function ensureInitialized() {
 }
 
 // Helper function to parse simple conversation text into structured format
-function parseConversationText(text: string) {
-  const messages = [];
-  const lines = text.split("\n").filter((line) => line.trim());
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-
-    // Look for patterns like "Human:", "Assistant:", "User:", etc.
-    if (line.match(/^(Human|User):\s*/i)) {
-      const content = line.replace(/^(Human|User):\s*/i, "");
-      // Collect multi-line content
-      let fullContent = content;
-      let j = i + 1;
-      while (
-        j < lines.length &&
-        !lines[j].match(/^(Human|User|Assistant):\s*/i)
-      ) {
-        fullContent += "\n" + lines[j].trim();
-        j++;
-      }
-      messages.push({
-        role: "human" as const,
-        content: fullContent,
-        timestamp: new Date().toISOString(),
-      });
-      i = j - 1; // Skip the lines we've processed
-    } else if (line.match(/^Assistant:\s*/i)) {
-      const content = line.replace(/^Assistant:\s*/i, "");
-      // Collect multi-line content
-      let fullContent = content;
-      let j = i + 1;
-      while (
-        j < lines.length &&
-        !lines[j].match(/^(Human|User|Assistant):\s*/i)
-      ) {
-        fullContent += "\n" + lines[j].trim();
-        j++;
-      }
-      messages.push({
-        role: "assistant" as const,
-        content: fullContent,
-        timestamp: new Date().toISOString(),
-      });
-      i = j - 1; // Skip the lines we've processed
-    }
-  }
-
-  // If no structured format found, treat entire text as a single message
-  if (messages.length === 0) {
-    messages.push({
-      role: "human" as const,
-      content: text,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  return messages;
-}
 
 async function saveConversation(
   conversationContent: string,
@@ -185,7 +127,8 @@ export async function POST(req: NextRequest) {
                       description: "Optional title for the conversation",
                     },
                   },
-                  required: ["conversation_text"],
+                  // We now require conversation_history
+                  required: ["conversation_history"],
                 },
               },
             ],
@@ -202,16 +145,15 @@ export async function POST(req: NextRequest) {
         }
 
         if (params.name === "save_conversation") {
-          const { conversation_text, conversation_history, title } =
-            params.arguments || {};
+          const { conversation_history, title } = params.arguments || {};
 
-          if (typeof conversation_text !== "string" && !conversation_history) {
+          if (!conversation_history) {
             return NextResponse.json({
               jsonrpc: "2.0",
               id,
               error: {
                 code: -32602,
-                message: "conversation_text or conversation_history required",
+                message: "conversation_history is required",
               },
             });
           }
@@ -219,7 +161,6 @@ export async function POST(req: NextRequest) {
           try {
             let formattedContent = "";
 
-            // Priority: conversation_history > parsed conversation_text > raw conversation_text
             if (conversation_history && Array.isArray(conversation_history)) {
               // Use provided structured conversation history
               formattedContent = conversation_history
@@ -232,26 +173,6 @@ export async function POST(req: NextRequest) {
                   return `${roleLabel}${timestamp}:\n${msg.content}`;
                 })
                 .join("\n\n" + "=".repeat(50) + "\n\n");
-            } else if (conversation_text) {
-              // Try to parse conversation_text into structured format
-              const parsedMessages = parseConversationText(conversation_text);
-
-              if (parsedMessages.length > 1) {
-                // Successfully parsed into multiple messages
-                formattedContent = parsedMessages
-                  .map((msg) => {
-                    const roleLabel =
-                      msg.role === "human" ? "Human" : "Assistant";
-                    const timestamp = msg.timestamp
-                      ? ` [${new Date(msg.timestamp).toLocaleString()}]`
-                      : "";
-                    return `${roleLabel}${timestamp}:\n${msg.content}`;
-                  })
-                  .join("\n\n" + "=".repeat(50) + "\n\n");
-              } else {
-                // Use raw conversation_text as fallback
-                formattedContent = conversation_text;
-              }
             }
 
             const url = await saveConversation(formattedContent, title);
