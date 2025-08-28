@@ -126,12 +126,12 @@ export async function POST(req: NextRequest) {
                 content: [{ type: "text", text: `Conversation saved: ${url}` }],
               },
             });
-          } catch (err: any) {
+          } catch (err) {
             console.error("Error saving conversation:", err);
             return NextResponse.json({
               jsonrpc: "2.0",
               id,
-              error: { code: -32603, message: err.message },
+              error: { code: -32603, message: "error" },
             });
           }
         }
@@ -149,12 +149,12 @@ export async function POST(req: NextRequest) {
           error: { code: -32601, message: `Unknown method: ${method}` },
         });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("MCP route error:", error);
     return NextResponse.json({
       jsonrpc: "2.0",
       id: id || null,
-      error: { code: -32603, message: error.message },
+      error: { code: -32603, message: "error" },
     });
   }
 }
