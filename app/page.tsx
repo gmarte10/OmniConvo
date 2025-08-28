@@ -92,17 +92,17 @@ const Home = async () => {
   const cardData = transformConversationsToCardData(conversations);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      <header className="bg-gray-200 p-4 flex justify-between items-center">
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="bg-card border-b p-4 flex justify-between items-center">
         <Link href="/" className="flex items-center space-x-3">
           <Image
-            src="/logo.png" // The path to your logo in the public folder
+            src="/logo.png"
             alt="OmniConvo Logo"
-            width={32} // The actual width of your logo file
-            height={32} // The actual height of your logo file
-            className="h-8 w-8" // Tailwind classes for display size
+            width={32}
+            height={32}
+            className="h-8 w-8"
           />
-          <span className="text-red-800 font-bold text-xl">OmniConvo GM</span>
+          <span className="text-primary font-bold text-xl">OmniConvo GM</span>
         </Link>
         <div className="flex items-center space-x-4">
           <Button
@@ -117,12 +117,12 @@ const Home = async () => {
       </header>
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
-        <Card className="p-6 mb-8 shadow-sm border border-gray-200">
+        <Card className="p-6 mb-8">
           <CardContent className="pt-6">
             <h1 className="text-3xl font-semibold mb-6 text-center">
               Save <span className="text-pink-500">Copilot</span> Conversations
             </h1>
-            <p className="text-center mb-8">
+            <p className="text-center mb-8 text-muted-foreground">
               Your reliable tool for saving Generative A.I. conversations.
               Easily save discussions from Copilot and access them later.
             </p>
@@ -132,7 +132,7 @@ const Home = async () => {
         {cardData.length === 0 ? (
           <Card className="p-8 text-center">
             <CardContent>
-              <p className="text-gray-500 text-lg">
+              <p className="text-muted-foreground text-lg">
                 No conversations found. Save one using the extension!
               </p>
             </CardContent>
@@ -141,38 +141,26 @@ const Home = async () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {cardData.map((card) => (
               <Link key={card.id} href={`/conversation/${card.id}`}>
-                <Card className="overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-200 cursor-pointer hover:border-gray-300">
+                <Card className="overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer">
                   <CardContent className="pt-6 px-6">
                     <div className="flex items-start space-x-4">
                       <Avatar
-                        className={`h-10 w-10 ${
-                          card.avatar === "S" || card.avatar === "L"
-                            ? "bg-blue-600"
-                            : card.avatar === "P" || card.avatar === "U"
-                            ? "bg-orange-600"
-                            : card.avatar === "C" || card.avatar === "J"
-                            ? "bg-purple-600"
-                            : "bg-gray-600"
-                        }`}
+                        className={`h-10 w-10 bg-primary text-primary-foreground`}
                       >
-                        <AvatarFallback className="text-white text-sm">
-                          {card.avatar}
-                        </AvatarFallback>
+                        <AvatarFallback>{card.avatar}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 pt-1">
-                        <p className="text-sm font-medium text-gray-800 leading-relaxed">
+                        <p className="text-sm font-medium text-foreground">
                           {card.username}
                         </p>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
+                  <CardFooter className="px-6 py-4 bg-muted/50 border-t flex justify-between items-center text-xs text-muted-foreground">
                     <div>
                       <Badge
-                        className={
-                          card.platform === "ChatGPT"
-                            ? "bg-blue-800 hover:bg-blue-700"
-                            : "bg-gray-700 hover:bg-gray-600"
+                        variant={
+                          card.platform === "ChatGPT" ? "default" : "secondary"
                         }
                       >
                         {card.platform}
